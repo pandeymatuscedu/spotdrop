@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpotDrop — Spotify Feature Case Study</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #1DB954;
+    --green-dim: #158a3e;
+    --green-glow: rgba(29, 185, 84, 0.15);
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #181818;
+    --bg4: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --text: #ffffff;
+    --text-dim: #b3b3b3;
+    --text-muted: #6a6a6a;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ── Scrollbar ─────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--green); border-radius: 2px; }
+
+  /* ── Nav ───────────────────────────────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px;
+    height: 64px;
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 10px; }
+
+  .nav-links {
+    display: flex; gap: 36px; list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--green); }
+
+  .nav-progress {
+    position: fixed; top: 64px; left: 0; right: 0; height: 2px;
+    background: var(--border); z-index: 99;
+  }
+  .nav-progress-bar {
+    height: 100%; background: var(--green);
+    width: 0%; transition: width 0.1s linear;
+  }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 120px 48px 80px;
+    position: relative; overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 20%, rgba(29,185,84,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(29,185,84,0.05) 0%, transparent 70%);
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Waveform decoration */
+  .hero-wave {
+    position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 3px; opacity: 0.12;
+  }
+  .wave-bar {
+    width: 3px; background: var(--green); border-radius: 2px;
+    animation: wave 1.4s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(2.5); }
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero-title {
+    font-family: var(--font-head);
+    font-size: clamp(64px, 10vw, 120px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -4px;
+    margin-bottom: 32px;
+    opacity: 0; animation: fadeUp 0.8s 0.35s forwards;
+  }
+  .hero-title .green { color: var(--green); }
+  .hero-title .dim { color: var(--text-muted); font-weight: 400; }
+
+  .hero-sub {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text-dim);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 56px;
+    opacity: 0; animation: fadeUp 0.8s 0.5s forwards;
+  }
+
+  .hero-meta {
+    display: flex; gap: 40px; align-items: center;
+    opacity: 0; animation: fadeUp 0.8s 0.65s forwards;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .hero-meta-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+  .hero-meta-value { font-family: var(--font-head); font-size: 15px; font-weight: 600; color: var(--text); }
+
+  .hero-divider { width: 1px; height: 40px; background: var(--border); }
+
+  .hero-cta {
+    display: flex; gap: 14px; margin-top: 48px;
+    opacity: 0; animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Buttons ───────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 100px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer; border: none;
+    letter-spacing: 0.3px;
+  }
+  .btn-green {
+    background: var(--green); color: #000;
+  }
+  .btn-green:hover { background: #1ed760; transform: scale(1.03); }
+  .btn-outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+  .btn-sm { padding: 9px 18px; font-size: 13px; }
+
+  /* ── Section shell ─────────────────────────────────────────────────────── */
+  section { padding: 100px 48px; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--font-head);
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1.0;
+    margin-bottom: 20px;
+  }
+
+  .section-body {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text-dim);
+    line-height: 1.75;
+    max-width: 680px;
+  }
+
+  /* ── Metrics ───────────────────────────────────────────────────────────── */
+  #metrics { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 56px;
+  }
+
+  .metric-card {
+    background: var(--bg3);
+    padding: 32px 24px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: background 0.2s;
+  }
+  .metric-card:hover { background: var(--bg4); }
+
+  .metric-value {
+    font-family: var(--font-head);
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .metric-value.amber { color: #f59e0b; }
+
+  .metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .metric-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .metric-status.hit { color: var(--green); }
+  .metric-status.miss { color: #f59e0b; }
+
+  /* ── Problem / Solution ────────────────────────────────────────────────── */
+  #overview .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+    margin-top: 56px; border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .ps-card {
+    background: var(--bg3);
+    padding: 48px 40px;
+  }
+  .ps-card.solution { background: var(--bg4); border-left: 3px solid var(--green); }
+
+  .ps-icon {
+    font-size: 28px; margin-bottom: 20px;
+  }
+  .ps-title {
+    font-family: var(--font-head);
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 16px; letter-spacing: -0.5px;
+  }
+  .ps-body {
+    font-size: 15px; font-weight: 300;
+    color: var(--text-dim); line-height: 1.75;
+  }
+
+  /* ── Phases ────────────────────────────────────────────────────────────── */
+  .phase-section { border-top: 1px solid var(--border); }
+  .phase-section:nth-child(even) { background: var(--bg2); }
+
+  .phase-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 40px;
+    margin-bottom: 48px; flex-wrap: wrap;
+  }
+
+  .phase-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-glow);
+    border: 1px solid rgba(29,185,84,0.3);
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+  }
+
+  .phase-actions {
+    display: flex; gap: 10px; flex-shrink: 0; margin-top: 8px;
+  }
+
+  .phase-description {
+    font-size: 15px; font-weight: 300;
+    color: var(--text-dim); line-height: 1.75;
+    max-width: 640px; margin-bottom: 40px;
+  }
+
+  .phase-highlights {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 40px;
+  }
+
+  .highlight-chip {
+    font-size: 12px; font-weight: 500;
+    padding: 5px 12px; border-radius: 100px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  /* PDF Embed */
+  .pdf-container {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .pdf-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--bg4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pdf-filename {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-dim);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pdf-filename::before {
+    content: '';
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+  }
+
+  .pdf-embed {
+    width: 100%; height: 620px;
+    border: none; display: block;
+    background: #1a1a1a;
+  }
+
+  .pdf-fallback {
+    display: none;
+    padding: 60px 40px; text-align: center;
+  }
+  .pdf-fallback p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+
+  /* ── Roadmap ───────────────────────────────────────────────────────────── */
+  #roadmap { background: var(--bg2); }
+
+  .roadmap-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 56px;
+  }
+
+  .roadmap-phase {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 30px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .roadmap-phase:hover { border-color: var(--green); transform: translateY(-4px); }
+  .roadmap-phase.active { border-color: var(--green); border-width: 2px; }
+
+  .roadmap-phase-label {
+    font-family: var(--font-head);
+    font-size: 28px; font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .roadmap-phase-label.now { color: var(--green); }
+  .roadmap-phase-label.next { color: #60a5fa; }
+  .roadmap-phase-label.later { color: #f59e0b; }
+
+  .roadmap-phase-timeline {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); letter-spacing: 1px;
+    margin-bottom: 24px;
+  }
+
+  .roadmap-items { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .roadmap-item {
+    font-size: 13px; font-weight: 400;
+    color: var(--text-dim);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .roadmap-item::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--border);
+    flex-shrink: 0;
+  }
+  .roadmap-item.done::before { background: var(--green); }
+  .roadmap-item.active::before { background: #60a5fa; }
+  .roadmap-item.later::before { background: #f59e0b; }
+
+  /* ── Skills ────────────────────────────────────────────────────────────── */
+  .skills-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 12px; margin-top: 56px;
+  }
+
+  .skill-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    transition: border-color 0.2s;
+  }
+  .skill-card:hover { border-color: var(--green); }
+
+  .skill-icon { font-size: 24px; margin-bottom: 14px; }
+  .skill-name {
+    font-family: var(--font-head);
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 8px; letter-spacing: -0.3px;
+  }
+  .skill-desc {
+    font-size: 12px; font-weight: 300;
+    color: var(--text-muted); line-height: 1.5;
+  }
+
+  /* ── Footer ────────────────────────────────────────────────────────────── */
+  footer {
+    padding: 60px 48px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 24px;
+  }
+
+  .footer-brand {
+    font-family: var(--font-head);
+    font-size: 24px; font-weight: 800;
+    color: var(--green); letter-spacing: -1px;
+  }
+  .footer-brand small {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 300;
+    color: var(--text-muted); letter-spacing: 0;
+    margin-top: 4px;
+  }
+
+  .footer-note {
+    font-size: 13px; color: var(--text-muted);
+    font-weight: 300; text-align: right; line-height: 1.6;
+    max-width: 400px;
+  }
+
+  /* ── Fade-in on scroll ─────────────────────────────────────────────────── */
+  .reveal {
+    opacity: 0; transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+
+  /* ── Divider line ──────────────────────────────────────────────────────── */
+  .green-line {
+    width: 48px; height: 3px;
+    background: var(--green);
+    border-radius: 2px;
+    margin: 20px 0 0;
+  }
+
+  /* ── Setup notice ──────────────────────────────────────────────────────── */
+  .setup-notice {
+    background: rgba(29,185,84,0.06);
+    border: 1px solid rgba(29,185,84,0.2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .setup-notice strong { color: var(--green); }
+  .setup-notice code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--bg4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 24px; }
+    .nav-links { display: none; }
+    section { padding: 80px 24px; }
+    .hero { padding: 100px 24px 60px; }
+    .hero-wave { display: none; }
+    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+    #overview .two-col { grid-template-columns: 1fr; }
+    .roadmap-grid { grid-template-columns: 1fr; }
+    .skills-grid { grid-template-columns: repeat(2, 1fr); }
+    footer { padding: 40px 24px; }
+    .footer-note { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">SpotDrop <span>by Mayank Pandey</span></div>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#metrics">Results</a></li>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#phase1">Phase 1</a></li>
+    <li><a href="#phase2a">PRD</a></li>
+    <li><a href="#phase2b">Roadmap</a></li>
+    <li><a href="#phase2c">Design</a></li>
+    <li><a href="#phase3">GTM</a></li>
+    <li><a href="#skills">Skills</a></li>
+  </ul>
+</nav>
+<div class="nav-progress"><div class="nav-progress-bar" id="progressBar"></div></div>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<div class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-wave" id="heroWave"></div>
+
+  <p class="hero-eyebrow">Product Management Case Study</p>
+  <h1 class="hero-title">
+    <span class="green">Spot</span>Drop<br>
+    <span class="dim">for Spotify</span>
+  </h1>
+  <p class="hero-sub">
+    A proximity-based social music discovery feature that lets Spotify users see what people nearby are listening to in real time — and connect over shared taste without saying a word.
+  </p>
+
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <span class="hero-meta-label">Author</span>
+      <span class="hero-meta-value">Mayank Pandey</span>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-label">Program</span>
+      <span class="hero-meta-value">M.S. Engineering Management, USC</span>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-label">Year</span>
+      <span class="hero-meta-value">2025</span>
+    </div>
+    <div class="hero-divider"></div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-label">Phases</span>
+      <span class="hero-meta-value">5 Phases + Executive Summary</span>
+    </div>
+  </div>
+
+  <div class="hero-cta">
+    <a href="#overview" class="btn btn-green">View Case Study</a>
+    <a href="SpotDrop_ExecSummary_Final.pdf" download class="btn btn-outline">Download Summary</a>
+  </div>
+</div>
+
+<!-- ── Overview ────────────────────────────────────────────────────────────── -->
+<section id="overview">
+  <div class="section-inner">
+    <p class="section-label reveal">The Opportunity</p>
+    <h2 class="section-title reveal reveal-delay-1">A social layer<br>Spotify doesn't have.</h2>
+    <div class="green-line reveal reveal-delay-2"></div>
+    <div style="margin-top: 24px;" class="reveal reveal-delay-2">
+      <p class="section-body">
+        Millions of people listen to music in public spaces every day — on trains, in cafes, at airports. Despite being surrounded by others, there is no way to discover what is playing on the headphones next to you. SpotDrop changes that.
+      </p>
+    </div>
+
+    <div class="two-col reveal">
+      <div class="ps-card">
+        <div class="ps-icon">🎧</div>
+        <h3 class="ps-title">The Problem</h3>
+        <p class="ps-body">Spotify's discovery tools are algorithmic and impersonal. They optimize for your past behavior. They cannot tell you what the person three seats away is listening to. Music is consumed in complete isolation, even in densely shared physical spaces.</p>
+      </div>
+      <div class="ps-card solution">
+        <div class="ps-icon">✦</div>
+        <h3 class="ps-title">The Solution</h3>
+        <p class="ps-body">An opt-in proximity feed that shows nearby listeners in real time. Users can save a track instantly, send a non-verbal listen-together request, or browse anonymously. Privacy first. Frictionless by design. Native to Spotify.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Metrics ──────────────────────────────────────────────────────────────── -->
+<section id="metrics">
+  <div class="section-inner">
+    <p class="section-label reveal">Hypothetical Launch Results</p>
+    <h2 class="section-title reveal reveal-delay-1">Month 3 pilot data.</h2>
+    <p class="section-body reveal reveal-delay-2" style="margin-top: 12px;">New York and London pilot markets. Targets drawn from the Phase 2a PRD. Results reflect a realistic early-stage launch scenario.</p>
+
+    <div class="metrics-grid reveal">
+      <div class="metric-card">
+        <div class="metric-value amber" data-target="12">0</div>
+        <div class="metric-label">% DAU Adoption Rate</div>
+        <div class="metric-status miss">↓ Target: 15%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" data-target="38">0</div>
+        <div class="metric-label">% Jam Acceptance Rate</div>
+        <div class="metric-status hit">↑ On Track</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" data-target="11">0</div>
+        <div class="metric-label">% Retention Lift vs. Control</div>
+        <div class="metric-status hit">↑ Target: +10%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" data-target="28">0</div>
+        <div class="metric-label">% Songs from Non-Top-100 Artists</div>
+        <div class="metric-status hit">↑ Target: 20%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" style="font-size: 36px;">7.3</div>
+        <div class="metric-label">NPS Score</div>
+        <div class="metric-status hit">↑ Target: 7.0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" data-target="9">0</div>
+        <div class="metric-label">% Session Length Lift</div>
+        <div class="metric-status hit">↑ On Track</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Roadmap ──────────────────────────────────────────────────────────────── -->
+<section id="roadmap">
+  <div class="section-inner">
+    <p class="section-label reveal">Product Roadmap</p>
+    <h2 class="section-title reveal reveal-delay-1">Built in three phases.</h2>
+
+    <div class="roadmap-grid reveal">
+      <div class="roadmap-phase active">
+        <div class="roadmap-phase-label now">Now</div>
+        <div class="roadmap-phase-timeline">Months 0 to 6</div>
+        <ul class="roadmap-items">
+          <li class="roadmap-item done">Nearby Listening Feed</li>
+          <li class="roadmap-item done">Privacy Toggle</li>
+          <li class="roadmap-item done">Save to Library</li>
+          <li class="roadmap-item done">Jam Request</li>
+          <li class="roadmap-item done">Anonymous Mode</li>
+          <li class="roadmap-item done">Offline BLE Support</li>
+        </ul>
+      </div>
+      <div class="roadmap-phase">
+        <div class="roadmap-phase-label next">Next</div>
+        <div class="roadmap-phase-timeline">Months 6 to 12</div>
+        <ul class="roadmap-items">
+          <li class="roadmap-item active">Emoji Reactions</li>
+          <li class="roadmap-item active">Ephemeral Chat</li>
+          <li class="roadmap-item active">AI Icebreakers</li>
+          <li class="roadmap-item active">AI Playlist Creator</li>
+          <li class="roadmap-item active">Silent Disco Mode</li>
+          <li class="roadmap-item active">Gamification</li>
+        </ul>
+      </div>
+      <div class="roadmap-phase">
+        <div class="roadmap-phase-label later">Later</div>
+        <div class="roadmap-phase-timeline">Month 12 and beyond</div>
+        <ul class="roadmap-items">
+          <li class="roadmap-item later">Group Jams</li>
+          <li class="roadmap-item later">Artist Spotlight</li>
+          <li class="roadmap-item later">Event-Based SpotDrop</li>
+          <li class="roadmap-item later">AI Recommendations</li>
+          <li class="roadmap-item later">CarPlay Integration</li>
+          <li class="roadmap-item later">Cross-Platform</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Setup Notice ─────────────────────────────────────────────────────────── -->
+<section style="padding: 40px 48px;">
+  <div class="section-inner">
+    <div class="setup-notice">
+      <strong>Setup Instructions:</strong> Place this HTML file and all PDF files in the same folder.
+      The PDF filenames expected are:
+      <code>SpotDrop_ExecSummary_Final.pdf</code>,
+      <code>Phase1_Discovery_Research_Final.pdf</code>,
+      <code>Phase2a_PRD.pdf</code>,
+      <code>Phase2b_Roadmap.pdf</code>,
+      <code>Phase2c_Design.pdf</code>,
+      <code>Phase3_GTM.pdf</code>.
+      To host online, upload all files to GitHub Pages, Netlify, or any static hosting service and share the link.
+    </div>
+  </div>
+</section>
+
+<!-- ── Phase Sections ───────────────────────────────────────────────────────── -->
+
+<!-- Executive Summary -->
+<section id="summary" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Executive Summary</div>
+        <h2 class="section-title">The full story<br>in two pages.</h2>
+        <p class="phase-description">A recruiter-facing overview of the entire SpotDrop case study: problem, solution, key metrics, roadmap, and results. Start here.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">Problem Statement</span>
+          <span class="highlight-chip">Solution Overview</span>
+          <span class="highlight-chip">Launch Metrics</span>
+          <span class="highlight-chip">Roadmap Summary</span>
+          <span class="highlight-chip">Document Index</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="SpotDrop_ExecSummary_Final.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="SpotDrop_ExecSummary_Final.pdf" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">SpotDrop_ExecSummary_Final.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="SpotDrop_ExecSummary_Final.pdf" title="SpotDrop Executive Summary"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- Phase 1 -->
+<section id="phase1" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Phase 1</div>
+        <h2 class="section-title">Discovery<br>and Research.</h2>
+        <p class="phase-description">Market sizing with cited sources, two fully developed user personas, a competitive analysis including Apple SharePlay and Spotify Jam, and a structured primary research methodology with stated hypotheses.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">675M MAU (Spotify Q4 2024)</span>
+          <span class="highlight-chip">20.7 hrs/week (IFPI 2023)</span>
+          <span class="highlight-chip">2 Personas</span>
+          <span class="highlight-chip">6-Product Competitive Analysis</span>
+          <span class="highlight-chip">7-Question Survey Design</span>
+          <span class="highlight-chip">4 Research Hypotheses</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="Phase1_Discovery_Research_Final.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="Phase1_Discovery_Research_Final.docx" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">Phase1_Discovery_Research_Final.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="Phase1_Discovery_Research_Final.pdf" title="Phase 1 Discovery and Research"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- Phase 2a -->
+<section id="phase2a" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Phase 2a</div>
+        <h2 class="section-title">Product Requirements<br>Document.</h2>
+        <p class="phase-description">Full PRD with 15 KPIs mapped to three product goals, 10 user stories with proper format and acceptance criteria, RICE-scored feature prioritization across 13 features, and a risk register with severity levels.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">15 KPIs</span>
+          <span class="highlight-chip">10 User Stories + Acceptance Criteria</span>
+          <span class="highlight-chip">RICE Scoring (13 features)</span>
+          <span class="highlight-chip">Technical Requirements</span>
+          <span class="highlight-chip">7-Item Risk Register</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="Phase2a_PRD.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="Phase2a_PRD.docx" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">Phase2a_PRD.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="Phase2a_PRD.pdf" title="Phase 2a PRD"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- Phase 2b -->
+<section id="phase2b" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Phase 2b</div>
+        <h2 class="section-title">Product<br>Roadmap.</h2>
+        <p class="phase-description">Now/Next/Later framework with 22 features across three phases, 8 milestone checkpoints, per-phase success criteria, key dependencies, phase gate risks, and explicit scope exclusions.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">22 Features Prioritized</span>
+          <span class="highlight-chip">3 Phase Goals</span>
+          <span class="highlight-chip">8 Milestones</span>
+          <span class="highlight-chip">Phase Success Criteria</span>
+          <span class="highlight-chip">Scope Exclusions</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="Phase2b_Roadmap.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="Phase2b_Roadmap.docx" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">Phase2b_Roadmap.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="Phase2b_Roadmap.pdf" title="Phase 2b Roadmap"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- Phase 2c -->
+<section id="phase2c" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Phase 2c</div>
+        <h2 class="section-title">Design and<br>Mockups.</h2>
+        <p class="phase-description">9 high-fidelity mobile screens with full interaction specifications, an end-to-end user flow table, navigation architecture, 6 design principles, accessibility specs, and design trade-off rationale.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">9 Annotated Screens</span>
+          <span class="highlight-chip">15-Step User Flow</span>
+          <span class="highlight-chip">Interaction Specs</span>
+          <span class="highlight-chip">WCAG 2.1 AA</span>
+          <span class="highlight-chip">Design Trade-offs</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="Phase2c_Design.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="Phase2c_Design.docx" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">Phase2c_Design.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="Phase2c_Design.pdf" title="Phase 2c Design"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- Phase 3 -->
+<section id="phase3" class="phase-section">
+  <div class="section-inner">
+    <div class="phase-header reveal">
+      <div>
+        <div class="phase-tag">Phase 3</div>
+        <h2 class="section-title">GTM and<br>Post-Launch.</h2>
+        <p class="phase-description">Four-phase launch plan with market selection rationale, communication strategy, hypothetical KPI analysis with signal interpretation, and a hypothesis-driven iteration plan with pre-specified success thresholds.</p>
+        <div class="phase-highlights">
+          <span class="highlight-chip">4-Phase GTM Plan</span>
+          <span class="highlight-chip">6 Market Analysis</span>
+          <span class="highlight-chip">12-Metric Launch Dashboard</span>
+          <span class="highlight-chip">4 Hypothesis-Driven Tests</span>
+          <span class="highlight-chip">3-Year Vision</span>
+        </div>
+      </div>
+      <div class="phase-actions">
+        <a href="Phase3_GTM.pdf" download class="btn btn-green btn-sm">Download PDF</a>
+        <a href="Phase3_GTM.docx" download class="btn btn-outline btn-sm">Download DOCX</a>
+      </div>
+    </div>
+    <div class="pdf-container reveal">
+      <div class="pdf-header">
+        <span class="pdf-filename">Phase3_GTM.pdf</span>
+      </div>
+      <iframe class="pdf-embed" src="Phase3_GTM.pdf" title="Phase 3 GTM"></iframe>
+    </div>
+  </div>
+</section>
+
+<!-- ── Skills ────────────────────────────────────────────────────────────────── -->
+<section id="skills">
+  <div class="section-inner">
+    <p class="section-label reveal">PM Competencies</p>
+    <h2 class="section-title reveal reveal-delay-1">What this case study demonstrates.</h2>
+
+    <div class="skills-grid reveal">
+      <div class="skill-card">
+        <div class="skill-icon">🔍</div>
+        <div class="skill-name">User Research</div>
+        <div class="skill-desc">Persona development, competitive analysis, research design with stated hypotheses</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">📋</div>
+        <div class="skill-name">Product Definition</div>
+        <div class="skill-desc">User stories with acceptance criteria, RICE prioritization, KPI-anchored goals</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">🗺</div>
+        <div class="skill-name">Strategic Planning</div>
+        <div class="skill-desc">Phased roadmap with milestones, dependency mapping, phase gate criteria</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">🎨</div>
+        <div class="skill-name">Design Thinking</div>
+        <div class="skill-desc">User flow, interaction specs, design principles, accessibility, trade-off rationale</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-icon">📈</div>
+        <div class="skill-name">GTM and Analytics</div>
+        <div class="skill-desc">Launch strategy, market selection, data interpretation, hypothesis-driven iteration</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────────── -->
+<footer>
+  <div>
+    <div class="footer-brand">
+      SpotDrop
+      <small>A Product Management Case Study by Mayank Pandey</small>
+    </div>
+  </div>
+  <div class="footer-note">
+    M.S. Engineering Management, University of Southern California<br>
+    This case study is a portfolio project. SpotDrop is not an official Spotify product.
+  </div>
+</footer>
+
+<script>
+  // ── Progress bar ────────────────────────────────────────────────────────────
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = (scrollTop / docHeight) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+  });
+
+  // ── Waveform ────────────────────────────────────────────────────────────────
+  const wave = document.getElementById('heroWave');
+  const heights = [20,35,55,80,110,90,130,100,70,120,85,60,100,75,45,90,115,65,40,80,105,55,95,70,50,85,115,75,45,60,100,80,55,90,70,40,110,65,85,50];
+  heights.forEach((h, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.style.height = h + 'px';
+    bar.style.animationDelay = (i * 0.07) + 's';
+    wave.appendChild(bar);
+  });
+
+  // ── Scroll reveal ───────────────────────────────────────────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── Counter animation ───────────────────────────────────────────────────────
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.dataset.target);
+        if (!target) return;
+        let current = 0;
+        const step = target / 40;
+        const timer = setInterval(() => {
+          current = Math.min(current + step, target);
+          el.textContent = Math.round(current);
+          if (current >= target) clearInterval(timer);
+        }, 30);
+        counterObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.metric-value[data-target]').forEach(el => counterObserver.observe(el));
+</script>
+</body>
+</html>
